@@ -21,8 +21,8 @@
     "reset": "cross-env NODE_ENV=development node ./src/config/seeder.js --delete"
   },
   "engines": {
-    "npm": "16.4.5",
-    "node": "14.4.0"
+    "npm": ">= 6.4.5",
+    "node": ">= 14.4.0"
   },
   "repository": {
     "type": "git",
