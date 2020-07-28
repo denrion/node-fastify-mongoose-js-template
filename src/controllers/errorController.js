@@ -5,8 +5,8 @@ const UnauthorizedError = require('../utils/errors/UnauthorizedError');
 const ResponseStatus = require('../constants/ResponseStatus');
 
 const globalErrorHandler = (error, request, reply) => {
-  error.statusCode = error.statusCode || status.INTERNAL_SERVER_ERROR;
-  error.status = error.status || ResponseStatus.ERROR;
+  error.statusCode = error.statusCode ?? status.INTERNAL_SERVER_ERROR;
+  error.status = error.status ?? ResponseStatus.ERROR;
 
   let err = { ...error, message: error.message, stack: error.stack };
 

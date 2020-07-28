@@ -12,10 +12,7 @@ class APIFeatures {
 
     let queryStr = JSON.stringify(queryObj);
 
-    queryStr = queryStr.replace(
-      /\b(eq|gt|gte|in|lt|lte|ne|nin)\b/g,
-      (matched) => `$${matched}`
-    );
+    queryStr = queryStr.replace(/\b(eq|gt|gte|in|lt|lte|ne|nin)\b/g, (matched) => `$${matched}`);
 
     this.query = this.query.find(JSON.parse(queryStr));
 
@@ -45,12 +42,11 @@ class APIFeatures {
   }
 
   paginate() {
-    const page = +this.queryString.page || 1;
-    const limit = +this.queryString.limit || 100;
+    const page = +this.queryString.page ?? 1;
+    const limit = +this.queryString.limit ?? 100;
     const skip = (page - 1) * limit;
 
-    if (page <= 0)
-      throw new BadRequestError('Not allowed to request negative pages');
+    if (page <= 0) throw new BadRequestError('Not allowed to request negative pages');
 
     this.query = this.query.skip(skip).limit(limit);
     this.paginationLinks = { page, limit };
@@ -59,8 +55,7 @@ class APIFeatures {
   }
 
   createPaginationLinks(total) {
-    if (!this.paginationLinks)
-      throw new BadRequestError('No pagination information provided');
+    if (!this.paginationLinks) throw new BadRequestError('No pagination information provided');
 
     const { page, limit } = this.paginationLinks;
 

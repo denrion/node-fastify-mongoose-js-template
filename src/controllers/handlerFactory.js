@@ -7,7 +7,7 @@ const setCorrectPluralSuffix = require('../utils/helpers/setCorrectPluralSuffix'
 const ResponseStatus = require('../constants/ResponseStatus');
 
 const getAll = (Model) => async (request, reply) => {
-  const filter = request.dbFilter || {};
+  const filter = request.dbFilter ?? {};
 
   const features = new APIFeatures(Model.find(filter), request.query)
     .filter()
