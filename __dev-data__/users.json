@@ -1,0 +1,14 @@
+[
+  {
+    "_id": "5e5fee92fb6d94630827c4aa",
+    "email": "admin@test.com",
+    "role": "admin",
+    "password": "test1234"
+  },
+  {
+    "_id": "5eb6898f5f5efa507012b18b",
+    "email": "test1@test.com",
+    "role": "user",
+    "password": "test1234"
+  }
+]
