@@ -4,17 +4,49 @@ class APIFeatures {
   constructor(query, queryString) {
     this.query = query;
     this.queryString = queryString;
+    this.queryStringCount = queryString;
   }
 
-  filter() {
+  searchAndFilter() {
     // eslint-disable-next-line no-unused-vars
     const { page, sort, limit, fields, ...queryObj } = this.queryString;
 
-    let queryStr = JSON.stringify(queryObj);
+    const parsedQueryParams = Object.keys(queryObj).map((key) => {
+      if (!key.includes('[') || !key.includes(']'))
+        return {
+          [key]: queryObj[key],
+        };
 
-    queryStr = queryStr.replace(/\b(eq|gt|gte|in|lt|lte|ne|nin)\b/g, (matched) => `$${matched}`);
+      if (key.includes('search')) {
+        const searchFilter = this.createSearchRegexFilter(queryObj);
 
-    this.query = this.query.find(JSON.parse(queryStr));
+        delete queryObj[key];
+
+        return searchFilter;
+      }
+
+      const field = key.substring(0, key.indexOf('['));
+      const operator = key.substring(key.indexOf('[') + 1, key.indexOf(']'));
+      let value = queryObj[key];
+
+      if (value.includes(',')) {
+        value = value.split(',');
+      }
+
+      return {
+        [field]: { [`$${operator}`]: value },
+      };
+    });
+
+    const query =
+      parsedQueryParams.length === 0
+        ? queryObj
+        : parsedQueryParams.length > 1
+        ? { $and: parsedQueryParams }
+        : parsedQueryParams[0];
+
+    this.queryStringCount = query;
+    this.query = this.query.find(query);
 
     return this;
   }
@@ -55,7 +87,8 @@ class APIFeatures {
   }
 
   createPaginationLinks(total) {
-    if (!this.paginationLinks) throw new BadRequestError('No pagination information provided');
+    if (!this.paginationLinks)
+      throw new BadRequestError('No pagination information provided');
 
     const { page, limit } = this.paginationLinks;
 
@@ -79,6 +112,21 @@ class APIFeatures {
     }
 
     return pagination;
+  }
+
+  createSearchRegexFilter(queryObj) {
+    let queryStr = JSON.stringify(queryObj);
+    queryStr = queryStr.replace(/search|[[\]']+/g, '');
+
+    const searchObj = JSON.parse(queryStr);
+    const objKey = Object.keys(searchObj)[0];
+    const searchValue = searchObj[objKey];
+
+    const searchFilter = objKey.split(',').map((field) => {
+      return { [field]: { $regex: searchValue, $options: 'i' } };
+    });
+
+    return { $or: searchFilter };
   }
 }
 

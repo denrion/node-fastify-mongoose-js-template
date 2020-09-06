@@ -4,7 +4,7 @@ const BadRequestError = require('../utils/errors/BadRequestError');
 const UnauthorizedError = require('../utils/errors/UnauthorizedError');
 const ResponseStatus = require('../constants/ResponseStatus');
 
-const globalErrorHandler = (error, request, reply) => {
+const globalErrorHandler = (error, reply) => {
   error.statusCode = error.statusCode ?? status.INTERNAL_SERVER_ERROR;
   error.status = error.status ?? ResponseStatus.ERROR;
 
@@ -25,18 +25,20 @@ const globalErrorHandler = (error, request, reply) => {
 
 // Format & send error response
 const sendErrorResponse = (error, reply) => {
-  return reply.status(error.statusCode).send({
-    status: error.status,
-    statusCode: error.statusCode,
-    // Operational, trusted error: send message to client
-    // Programming or other unknown error: don`t leak the error detals
-    message:
-      process.env.NODE_ENV === 'production' && !error.isOperational
-        ? 'Something went very wrong'
-        : error.message,
-    error: process.env.NODE_ENV === 'development' ? error : undefined,
-  });
-  // .log.error(error);
+  return reply
+    .status(error.statusCode)
+    .send({
+      status: error.status,
+      statusCode: error.statusCode,
+      // Operational, trusted error: send message to client
+      // Programming or other unknown error: don`t leak the error detals
+      message:
+        process.env.NODE_ENV === 'production' && !error.isOperational
+          ? 'Something went very wrong'
+          : error.message,
+      error: process.env.NODE_ENV === 'development' ? error : undefined,
+    })
+    .log.error(error);
 };
 
 // Handle specific error functions
@@ -59,6 +61,7 @@ const handleValidationErrorDB = (err) => {
 
 const handleJWTError = () => new UnauthorizedError('Invalid token. Please log in again.');
 
-const handleJWTExpiredError = () => new UnauthorizedError('Token expired. Please log in again.');
+const handleJWTExpiredError = () =>
+  new UnauthorizedError('Token expired. Please log in again.');
 
 module.exports = globalErrorHandler;

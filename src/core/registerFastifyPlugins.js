@@ -14,15 +14,15 @@ const registerFastifyPlugins = async (fastify) => {
   fastify.register(fastifyHelmet);
 
   fastify.register(fastifyRateLimit, {
-    max: +process.env.RATE_LIMIT_MAX_NUM_CONNECTIONS,
-    timeWindow: +process.env.RATE_LIMIT_TIME_WINDOW_MS,
+    max: +process.env.FASTIFY_RATE_LIMIT_MAX_NUM_CONNECTIONS ?? 1000,
+    timeWindow: +process.env.FASTIFY_RATE_LIMIT_TIME_WINDOW_MS ?? 60000,
   });
 
   // https://github.com/fastify/fastify-jwt
   fastify.register(fastifyJwt, {
     secret: process.env.JWT_SECRET,
     cookie: {
-      cookieName: 'token',
+      cookieName: process.env.JWT_COOKIE_NAME,
     },
   });
 

@@ -6,26 +6,33 @@ const BadRequestError = require('../utils/errors/BadRequestError');
 const UnauthorizedError = require('../utils/errors/UnauthorizedError');
 const filterReqBody = require('../utils/filterReqBody');
 
-const createTokenAndSendResponse = async (user, statusCode, request, reply) => {
+const cookieOptions = {
+  path: process.env.JWT_COOKIE_PATH,
+  expires: new Date(
+    Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000 // turn into milis
+  ),
+  httpOnly: true,
+  sameSite: 'none',
+  // secure must be set to true if sameSame is not set or is set to "none"
+  // if secure is true, postman won't set cookies
+  // if secure is false, browser won't set cookies
+  secure: true,
+};
+
+const createTokenAndSendResponse = async (user, statusCode, reply) => {
   const tokenPayload = { id: user.id };
 
   const token = await reply.jwtSign(tokenPayload, {
     expiresIn: process.env.JWT_EXPIRES_IN,
   });
 
-  const cookieOptions = {
-    expires: new Date(
-      Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000 // turn into milis
-    ),
-    httpOnly: true,
-    sameSite: true,
-    secure: process.env.NODE_ENV === 'production', // request.headers['x-forwarded-proto'] === 'https', // The second one is ONLY for Heroku
-  };
-
-  return reply.status(statusCode).setCookie('token', token, cookieOptions).send({
-    status: ResponseStatus.SUCCESS,
-    data: { token, user },
-  });
+  return reply
+    .status(statusCode)
+    .setCookie(process.env.JWT_COOKIE_NAME, token, cookieOptions)
+    .send({
+      status: ResponseStatus.SUCCESS,
+      data: { token, user },
+    });
 };
 
 /**
@@ -41,7 +48,7 @@ const signup = async (request, reply) => {
 
   const user = await User.create({ email, password, passwordConfirm });
 
-  return createTokenAndSendResponse(user, status.CREATED, request, reply);
+  return createTokenAndSendResponse(user, status.CREATED, reply);
 };
 
 /**
@@ -52,14 +59,28 @@ const signup = async (request, reply) => {
 const login = async (request, reply) => {
   const { email, password } = request.body;
 
-  if (!email || !password) throw new BadRequestError('Please provide email and password!');
+  if (!email || !password)
+    throw new BadRequestError('Please provide email and password!');
 
   const user = await User.findByEmail(email).select('+password');
 
   if (!user || !(await user.isCorrectPassword(password, user.password)))
     throw new UnauthorizedError('Invalid credentials');
 
-  return createTokenAndSendResponse(user, status.OK, request, reply);
+  return createTokenAndSendResponse(user, status.OK, reply);
+};
+
+/**
+ * @desc      Logout user
+ * @route     POST /api/v1/auth/logout
+ * @access    Private
+ * @usage     Use to unset the jwt cookie if using cookies for storing jwt
+ */
+const logout = async (request, reply) => {
+  reply
+    .status(status.OK)
+    .clearCookie(process.env.JWT_COOKIE_NAME, cookieOptions)
+    .send({ status: ResponseStatus.SUCCESS });
 };
 
 /**
@@ -72,7 +93,7 @@ const getMe = async (request, reply) => {
 
   return reply.status(status.OK).send({
     success: ResponseStatus.SUCCESS,
-    data: { user },
+    data: user,
   });
 };
 
@@ -95,7 +116,7 @@ const updateMe = async (request, reply) => {
 
   return reply.status(status.OK).send({
     status: ResponseStatus.SUCCESS,
-    data: { user },
+    data: user,
   });
 };
 
@@ -125,7 +146,7 @@ const updateMyPassword = async (request, reply) => {
   await user.save();
 
   // 4) Log user in, send JWT
-  return createTokenAndSendResponse(user, status.OK, request, reply);
+  return createTokenAndSendResponse(user, status.OK, reply);
 };
 
 /**
@@ -154,6 +175,7 @@ const deleteMe = async (request, reply) => {
 module.exports = {
   signup,
   login,
+  logout,
   getMe,
   updateMe,
   updateMyPassword,
