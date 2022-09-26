@@ -47,7 +47,7 @@
     "mongoose-unique-validator": "^2.0.3",
     "mongoose-update-if-current": "^1.4.0",
     "pino-pretty": "^4.3.0",
-    "pm2": "^4.5.0"
+    "pm2": "^5.2.0"
   },
   "devDependencies": {
     "babel-eslint": "^10.1.0",
